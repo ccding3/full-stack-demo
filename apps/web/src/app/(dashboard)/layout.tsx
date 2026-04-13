@@ -5,6 +5,8 @@ import { Header } from "@/components/dashboard/Header";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
+
+  // 并行获取用户信息和 profile
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

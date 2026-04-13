@@ -8,32 +8,19 @@ import type { DashboardStats, RegistrationTrend } from "@/types/supabase";
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // 获取统计数据（视图返回单行）
-  const { data: statsRows } = await supabase
-    .from("dashboard_stats")
-    .select("*")
-    .returns<DashboardStats[]>();
-  const stats = statsRows?.[0] ?? null;
+  // 并行发起所有请求，减少等待时间
+  const [statsResult, trendResult, adminResult, userResult] = await Promise.all([
+    supabase.from("dashboard_stats").select("*").returns<DashboardStats[]>(),
+    supabase.from("registration_trend").select("*").returns<RegistrationTrend[]>(),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "admin"),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "user"),
+  ]);
 
-  // 获取注册趋势
-  const { data: trend } = await supabase
-    .from("registration_trend")
-    .select("*")
-    .returns<RegistrationTrend[]>();
-
-  // 获取角色分布
-  const { count: adminCount } = await supabase
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("role", "admin");
-  const { count: userCount } = await supabase
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("role", "user");
-
+  const stats = statsResult.data?.[0] ?? null;
+  const trend = trendResult.data ?? [];
   const roleData = [
-    { role: "管理员", count: adminCount ?? 0 },
-    { role: "普通用户", count: userCount ?? 0 },
+    { role: "管理员", count: adminResult.count ?? 0 },
+    { role: "普通用户", count: userResult.count ?? 0 },
   ];
 
   return (
@@ -43,7 +30,6 @@ export default async function DashboardPage() {
         <p className="text-muted-foreground text-sm mt-1">系统概览</p>
       </div>
 
-      {/* 统计卡片 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="总用户数"
@@ -71,9 +57,8 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* 图表 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UserTrendChart data={trend ?? []} />
+        <UserTrendChart data={trend} />
         <OnlineUsersChart data={roleData} />
       </div>
     </div>
