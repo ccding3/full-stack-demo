@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"/Users/dingchuancao/工作/百得思维/2026前端中级训练营/作业/full-stack-demo/\" log --oneline -10)",
+      "Bash(pnpm --version)",
+      "Bash(npx --version)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm turbo:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
