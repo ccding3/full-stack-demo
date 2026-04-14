@@ -56,9 +56,14 @@ export function AnnouncementDialog({ open, onOpenChange, announcement }: Announc
 
     const payload = { title, content, type };
 
-    const { error } = announcement
-      ? await supabase.from("announcements").update(payload).eq("id", announcement.id)
-      : await supabase.from("announcements").insert({ ...payload, author_id: user.id });
+    let error;
+    if (announcement) {
+      const result = await supabase.from("announcements").update(payload).eq("id", announcement.id);
+      error = result.error;
+    } else {
+      const result = await supabase.from("announcements").insert({ ...payload, author_id: user.id });
+      error = result.error;
+    }
 
     if (error) {
       toast.error("操作失败：" + error.message);
