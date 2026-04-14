@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, createRawClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,7 +45,7 @@ export function AnnouncementDialog({ open, onOpenChange, announcement }: Announc
     }
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = createRawClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -56,7 +56,7 @@ export function AnnouncementDialog({ open, onOpenChange, announcement }: Announc
 
     const payload = { title, content, type };
 
-    let error;
+    let error: { message: string } | null = null;
     if (announcement) {
       const result = await supabase.from("announcements").update(payload).eq("id", announcement.id);
       error = result.error;

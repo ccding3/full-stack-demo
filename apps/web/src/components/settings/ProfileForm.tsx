@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, createRawClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +21,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const supabase = createClient();
+    const supabase = createRawClient();
     const { error } = await supabase
       .from("profiles")
       .update({ username: username || null, avatar_url: avatarUrl || null })

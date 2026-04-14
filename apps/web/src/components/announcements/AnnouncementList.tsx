@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, createRawClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +47,7 @@ export function AnnouncementList({ announcements }: AnnouncementListProps) {
   }
 
   async function handleToggleActive(item: Announcement) {
-    const supabase = createClient();
+    const supabase = createRawClient();
     const { error } = await supabase
       .from("announcements")
       .update({ is_active: !item.is_active })
