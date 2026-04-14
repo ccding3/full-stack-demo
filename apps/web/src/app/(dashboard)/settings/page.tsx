@@ -1,39 +1,18 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import { ProfileForm } from "@/components/settings/ProfileForm";
+import { PasswordForm } from "@/components/settings/PasswordForm";
 
-import { useState } from "react";
-import { toast } from "sonner";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user?.id ?? "")
+    .single();
 
-export default function SettingsPage() {
-  const [newPassword, setNewPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleChangePassword(e: React.FormEvent) {
-    e.preventDefault();
-    if (newPassword !== confirm) {
-      toast.error("两次密码不一致");
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast.error("密码至少 6 位");
-      return;
-    }
-    setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      toast.error("修改失败：" + error.message);
-    } else {
-      toast.success("密码已修改");
-      setNewPassword("");
-      setConfirm("");
-    }
-    setLoading(false);
+  if (!profile) {
+    return <p className="text-destructive">无法加载用户信息</p>;
   }
 
   return (
@@ -43,43 +22,10 @@ export default function SettingsPage() {
         <p className="text-muted-foreground text-sm mt-1">账号与系统设置</p>
       </div>
 
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>修改密码</CardTitle>
-          <CardDescription>更新你的登录密码</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleChangePassword}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">新密码</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                placeholder="至少 6 位"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm">确认新密码</Label>
-              <Input
-                id="confirm"
-                type="password"
-                placeholder="再次输入新密码"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={loading}>
-              {loading ? "保存中..." : "保存密码"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
+      <div className="space-y-6">
+        <ProfileForm profile={profile} />
+        <PasswordForm />
+      </div>
     </div>
   );
 }

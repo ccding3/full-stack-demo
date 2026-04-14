@@ -18,7 +18,10 @@
 
 - 登录 / 注册（Supabase Auth）
 - Dashboard 首页（统计卡片 + 注册趋势折线图 + 角色分布柱状图）
-- 用户管理（增删改查）
+- 用户管理（增删改查 + 搜索/筛选/分页）
+- 公告管理（发布/编辑/启用禁用/删除）
+- 操作日志（查看系统操作记录，支持搜索分页）
+- 设置（个人资料编辑 + 修改密码）
 
 ## 项目结构
 
@@ -47,10 +50,13 @@ cp apps/web/.env.example apps/web/.env.local
 
 ### 3. 初始化数据库
 
-在 [Supabase SQL Editor](https://app.supabase.com) 中执行：
+在 [Supabase SQL Editor](https://app.supabase.com) 中按顺序执行：
 
 ```
 supabase/migrations/20260413000001_create_profiles.sql
+supabase/migrations/20260414000001_create_announcements.sql
+supabase/migrations/20260414000002_create_audit_logs.sql
+supabase/migrations/20260414000003_create_files.sql
 ```
 
 ### 4. 启动开发服务器

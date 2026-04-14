@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -9,9 +9,15 @@ import { createRawClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SearchInput } from "@/components/ui/search-input";
+import { Pagination } from "@/components/ui/pagination";
+import { Select } from "@/components/ui/select";
+import { EmptyState } from "@/components/ui/empty-state";
 import { DeleteDialog } from "./DeleteDialog";
 import type { Profile } from "@/types/supabase";
 import { formatDateTime } from "@full-stack-demo/utils";
+
+const PAGE_SIZE = 10;
 
 interface UserTableProps {
   users: Profile[];
@@ -21,6 +27,34 @@ export function UserTable({ users }: UserTableProps) {
   const router = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "user">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    return users.filter((u) => {
+      const matchSearch =
+        !search ||
+        u.email.toLowerCase().includes(search.toLowerCase()) ||
+        (u.username ?? "").toLowerCase().includes(search.toLowerCase());
+      const matchRole = roleFilter === "all" || u.role === roleFilter;
+      const matchStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" ? u.is_active : !u.is_active);
+      return matchSearch && matchRole && matchStatus;
+    });
+  }, [users, search, roleFilter, statusFilter]);
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  // 筛选条件变化时重置到第一页
+  function handleSearch(v: string) { setSearch(v); setPage(1); }
+  function handleRole(v: string) { setRoleFilter(v as typeof roleFilter); setPage(1); }
+  function handleStatus(v: string) { setStatusFilter(v as typeof statusFilter); setPage(1); }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -39,16 +73,35 @@ export function UserTable({ users }: UserTableProps) {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">用户列表</h2>
-        <Button asChild size="sm">
-          <Link href="/users/new">
-            <Plus className="h-4 w-4 mr-1" />
-            新建用户
-          </Link>
-        </Button>
+      {/* 工具栏 */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <SearchInput
+          value={search}
+          onChange={handleSearch}
+          placeholder="搜索用户名或邮箱..."
+          className="flex-1"
+        />
+        <div className="flex gap-2">
+          <Select value={roleFilter} onChange={(e) => handleRole(e.target.value)} className="w-32">
+            <option value="all">全部角色</option>
+            <option value="admin">管理员</option>
+            <option value="user">普通用户</option>
+          </Select>
+          <Select value={statusFilter} onChange={(e) => handleStatus(e.target.value)} className="w-32">
+            <option value="all">全部状态</option>
+            <option value="active">正常</option>
+            <option value="inactive">禁用</option>
+          </Select>
+          <Button asChild size="sm">
+            <Link href="/users/new">
+              <Plus className="h-4 w-4 mr-1" />
+              新建
+            </Link>
+          </Button>
+        </div>
       </div>
 
+      {/* 表格 */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -62,14 +115,17 @@ export function UserTable({ users }: UserTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  暂无用户数据
+                <TableCell colSpan={6}>
+                  <EmptyState
+                    title="暂无用户"
+                    description={search || roleFilter !== "all" || statusFilter !== "all" ? "没有符合筛选条件的用户" : "还没有任何用户数据"}
+                  />
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
+              paginated.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.username ?? "—"}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -109,6 +165,13 @@ export function UserTable({ users }: UserTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      <Pagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={filtered.length}
+        onPageChange={setPage}
+      />
 
       <DeleteDialog
         open={!!deleteTarget}
